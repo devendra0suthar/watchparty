@@ -36,7 +36,7 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
   const analyserRef = useRef<AnalyserNode | null>(null);
   const peersRef = useRef<Map<string, PeerConnection>>(new Map());
 
-  const createPeerConnection = useCallback((peerId: string, username: string): RTCPeerConnection => {
+  const createPeerConnection = useCallback((peerId: string): RTCPeerConnection => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     pc.onicecandidate = (event) => {
@@ -154,7 +154,7 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
 
       if (average > 30) {
-        setSpeakingUsers((prev) => new Set([...prev, currentUser.id]));
+        setSpeakingUsers((prev) => new Set([...Array.from(prev), currentUser.id]));
         socket?.emit('voice:speaking', { roomId, userId: currentUser.id, isSpeaking: true });
       } else {
         setSpeakingUsers((prev) => {
@@ -179,7 +179,7 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
     const handleVoiceUserJoined = async (data: { userId: string; username: string }) => {
       if (data.userId === currentUser.id || !localStreamRef.current) return;
 
-      const pc = createPeerConnection(data.userId, data.username);
+      const pc = createPeerConnection(data.userId);
 
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current!);
@@ -201,7 +201,7 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
     const handleVoiceOffer = async (data: { senderId: string; senderName: string; offer: RTCSessionDescriptionInit }) => {
       if (!localStreamRef.current) return;
 
-      const pc = createPeerConnection(data.senderId, data.senderName);
+      const pc = createPeerConnection(data.senderId);
 
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current!);
