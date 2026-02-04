@@ -5,12 +5,10 @@
   "main": "socket.js",
   "scripts": {
     "start": "node socket.js",
-    "build": "tsc socket.ts --outDir . --esModuleInterop --skipLibCheck"
+    "build": "npx tsc socket.ts --outDir . --esModuleInterop --skipLibCheck"
   },
   "dependencies": {
-    "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
+    "socket.io": "^4.8.3",
     "typescript": "^5.0.0"
   },
   "engines": {
