@@ -1,0 +1,19 @@
+{
+  "name": "watchparty-socket-server",
+  "version": "1.0.0",
+  "description": "Socket.io server for WatchParty real-time features",
+  "main": "socket.js",
+  "scripts": {
+    "start": "node socket.js",
+    "build": "tsc socket.ts --outDir . --esModuleInterop --skipLibCheck"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
