@@ -211,6 +211,48 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Screen sharing events
+  socket.on('screen:start', (data: { roomId: string; oderId: string }) => {
+    const { roomId, oderId } = data;
+    socket.to(roomId).emit('screen:started', { oderId });
+    console.log(`${username} started screen sharing in room ${roomId}`);
+  });
+
+  socket.on('screen:stop', (data: { roomId: string }) => {
+    const { roomId } = data;
+    socket.to(roomId).emit('screen:stopped', {});
+    console.log(`${username} stopped screen sharing in room ${roomId}`);
+  });
+
+  socket.on('screen:request', (data: { roomId: string; oderId: string }) => {
+    const { roomId, oderId } = data;
+    socket.to(roomId).emit('screen:viewer-join', { oderId });
+  });
+
+  socket.on('screen:offer', (data: { roomId: string; targetId: string; offer: RTCSessionDescriptionInit }) => {
+    const { targetId, offer } = data;
+    io.to(targetId).emit('screen:offer', {
+      senderId: userId,
+      offer,
+    });
+  });
+
+  socket.on('screen:answer', (data: { roomId: string; targetId: string; answer: RTCSessionDescriptionInit }) => {
+    const { targetId, answer } = data;
+    io.to(targetId).emit('screen:answer', {
+      senderId: userId,
+      answer,
+    });
+  });
+
+  socket.on('screen:ice-candidate', (data: { roomId: string; targetId: string; candidate: RTCIceCandidateInit }) => {
+    const { targetId, candidate } = data;
+    io.to(targetId).emit('screen:ice-candidate', {
+      senderId: userId,
+      candidate,
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${username} (${userId})`);
 

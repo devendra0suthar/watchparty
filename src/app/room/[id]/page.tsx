@@ -11,6 +11,7 @@ import Chat from '@/components/Chat';
 import QRShare from '@/components/QRShare';
 import RoomControls from '@/components/RoomControls';
 import VoiceChat from '@/components/VoiceChat';
+import ScreenShare from '@/components/ScreenShare';
 
 interface RoomData {
   id: string;
@@ -50,6 +51,7 @@ export default function RoomPage() {
   const [error, setError] = useState('');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [watchMode, setWatchMode] = useState<'youtube' | 'screen'>('youtube');
 
   const fetchRoom = useCallback(async () => {
     try {
@@ -245,19 +247,64 @@ export default function RoomPage() {
       <div className="container mx-auto px-4 py-6">
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <VideoPlayer
-              videoUrl={videoUrl}
-              roomId={roomId}
-              isHost={isHost}
-              socket={socket}
-            />
-            {isHost && (
-              <RoomControls
+            {/* Watch Mode Tabs */}
+            <div className="flex gap-2 bg-gray-800 p-1 rounded-lg">
+              <button
+                onClick={() => setWatchMode('youtube')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md font-medium transition-all ${
+                  watchMode === 'youtube'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                </svg>
+                YouTube
+              </button>
+              <button
+                onClick={() => setWatchMode('screen')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md font-medium transition-all ${
+                  watchMode === 'screen'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Screen Share
+              </button>
+            </div>
+
+            {/* YouTube Mode */}
+            {watchMode === 'youtube' && (
+              <>
+                <VideoPlayer
+                  videoUrl={videoUrl}
+                  roomId={roomId}
+                  isHost={isHost}
+                  socket={socket}
+                />
+                {isHost && (
+                  <RoomControls
+                    roomId={roomId}
+                    currentVideoUrl={videoUrl}
+                    isHost={isHost}
+                    socket={socket}
+                    onVideoChange={handleVideoChange}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Screen Share Mode */}
+            {watchMode === 'screen' && (
+              <ScreenShare
                 roomId={roomId}
-                currentVideoUrl={videoUrl}
                 isHost={isHost}
                 socket={socket}
-                onVideoChange={handleVideoChange}
+                currentUser={currentUser}
               />
             )}
 
