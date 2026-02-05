@@ -49,6 +49,7 @@ export default function RoomPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   const fetchRoom = useCallback(async () => {
     try {
@@ -97,21 +98,68 @@ export default function RoomPage() {
     const sock = connectSocket(session.user.id, session.user.username || session.user.name || '');
     setSocket(sock);
 
-    sock.emit('room:join', roomId);
+    sock.on('connect', () => {
+      console.log('Socket connected');
+      setIsConnected(true);
+      sock.emit('room:join', roomId);
+    });
+
+    sock.on('disconnect', () => {
+      console.log('Socket disconnected');
+      setIsConnected(false);
+    });
+
+    sock.on('connect_error', (err) => {
+      console.error('Socket connection error:', err);
+      setIsConnected(false);
+    });
+
+    // If already connected, join the room
+    if (sock.connected) {
+      sock.emit('room:join', roomId);
+      setIsConnected(true);
+    }
 
     sock.on('video:change', (data: { videoUrl: string }) => {
       setVideoUrl(data.videoUrl);
     });
 
-    sock.on('room:user-joined', (data: { username: string }) => {
+    sock.on('room:user-joined', (data: { userId: string; username: string }) => {
       console.log(`${data.username} joined the room`);
+      // Add user to members list if not already present
+      setRoom((prev) => {
+        if (!prev) return prev;
+        const exists = prev.members.some((m) => m.user.id === data.userId);
+        if (exists) return prev;
+        return {
+          ...prev,
+          members: [
+            ...prev.members,
+            { user: { id: data.userId, username: data.username } },
+          ],
+        };
+      });
     });
 
-    sock.on('room:user-left', (data: { username: string }) => {
+    sock.on('room:user-left', (data: { userId: string; username: string }) => {
       console.log(`${data.username} left the room`);
+      // Remove user from members list
+      setRoom((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.filter((m) => m.user.id !== data.userId),
+        };
+      });
     });
 
     return () => {
+      sock.off('connect');
+      sock.off('disconnect');
+      sock.off('connect_error');
+      sock.off('video:change');
+      sock.off('room:user-joined');
+      sock.off('room:user-left');
       sock.emit('room:leave', roomId);
       disconnectSocket();
     };
@@ -181,6 +229,14 @@ export default function RoomPage() {
                 Host
               </span>
             )}
+            <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${
+              isConnected ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-300' : 'bg-red-300'
+              }`}></span>
+              {isConnected ? 'Live' : 'Connecting...'}
+            </span>
           </div>
           <QRShare roomId={roomId} />
         </div>
