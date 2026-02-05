@@ -40,7 +40,7 @@ export default function ScreenShare({
   const [isReceiving, setIsReceiving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createPeerConnection = useCallback((peerId: string, isInitiator: boolean): RTCPeerConnection => {
+  const createPeerConnection = useCallback((peerId: string): RTCPeerConnection => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
     pc.onicecandidate = (event) => {
@@ -136,7 +136,7 @@ export default function ScreenShare({
     const handleViewerJoin = async (data: { oderId: string }) => {
       if (!isHost || !localStreamRef.current) return;
 
-      const pc = createPeerConnection(data.oderId, true);
+      const pc = createPeerConnection(data.oderId);
 
       // Add local stream tracks to the connection
       localStreamRef.current.getTracks().forEach(track => {
@@ -160,7 +160,7 @@ export default function ScreenShare({
     const handleOffer = async (data: { senderId: string; offer: RTCSessionDescriptionInit }) => {
       if (isHost) return;
 
-      const pc = createPeerConnection(data.senderId, false);
+      const pc = createPeerConnection(data.senderId);
 
       await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
       const answer = await pc.createAnswer();
@@ -192,7 +192,7 @@ export default function ScreenShare({
     };
 
     // Viewer: Host started sharing
-    const handleScreenStart = (data: { oderId: string }) => {
+    const handleScreenStart = () => {
       if (!isHost) {
         // Request to receive the stream
         socket.emit('screen:request', { roomId, oderId: currentUser.id });
@@ -231,11 +231,14 @@ export default function ScreenShare({
 
   // Cleanup on unmount
   useEffect(() => {
+    const peers = peersRef.current;
+    const localStream = localStreamRef.current;
+
     return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
       }
-      peersRef.current.forEach((peer) => {
+      peers.forEach((peer) => {
         peer.connection.close();
       });
     };
