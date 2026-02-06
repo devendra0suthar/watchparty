@@ -77,7 +77,7 @@ export default function ScreenShare({
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           cursor: 'always',
-        },
+        } as MediaTrackConstraints,
         audio: true, // Capture tab audio
       });
 
