@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  username         String         @unique
+  password         String
+  avatar           String?
+  rooms            Room[]         @relation("RoomHost")
+  roomMembers      RoomMember[]
+  messages         Message[]
+  sentRequests     FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+  friendshipsA     Friendship[]   @relation("FriendA")
+  friendshipsB     Friendship[]   @relation("FriendB")
+  createdAt        DateTime       @default(now())
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userAId   String
+  userBId   String
+  userA     User     @relation("FriendA", fields: [userAId], references: [id])
+  userB     User     @relation("FriendB", fields: [userBId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userAId, userBId])
+}
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     String   @default("pending")
+  sender     User     @relation("SentRequests", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([senderId, receiverId])
+}
+
+model Room {
+  id        String       @id @default(cuid())
+  name      String
+  videoUrl  String?
+  hostId    String
+  host      User         @relation("RoomHost", fields: [hostId], references: [id])
+  members   RoomMember[]
+  messages  Message[]
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+}
+
+model RoomMember {
+  id       String   @id @default(cuid())
+  userId   String
+  roomId   String
+  user     User     @relation(fields: [userId], references: [id])
+  room     Room     @relation(fields: [roomId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, roomId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  roomId    String
+  user      User     @relation(fields: [userId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+}
