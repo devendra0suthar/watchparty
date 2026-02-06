@@ -1,5 +1,8 @@
 import { Server } from 'socket.io';
 import { createServer } from 'http';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -116,22 +119,47 @@ io.on('connection', (socket) => {
     console.log(`Video changed in room ${roomId} to ${videoUrl}`);
   });
 
-  socket.on('chat:message', (data: {
+  socket.on('chat:message', async (data: {
     roomId: string;
     content: string;
     user: { id: string; username: string; avatar?: string };
   }) => {
     const { roomId, content, user } = data;
 
-    const message = {
-      id: `${Date.now()}-${userId}`,
-      content,
-      user,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      const saved = await prisma.message.create({
+        data: {
+          content,
+          userId: user.id,
+          roomId,
+        },
+        include: {
+          user: {
+            select: { id: true, username: true, avatar: true },
+          },
+        },
+      });
 
-    io.to(roomId).emit('chat:message', message);
-    console.log(`Chat message in room ${roomId} from ${user.username}: ${content}`);
+      const message = {
+        id: saved.id,
+        content: saved.content,
+        user: saved.user,
+        createdAt: saved.createdAt.toISOString(),
+      };
+
+      io.to(roomId).emit('chat:message', message);
+      console.log(`Chat message in room ${roomId} from ${user.username}: ${content}`);
+    } catch (err) {
+      console.error('Error saving chat message:', err);
+      // Still broadcast even if DB save fails
+      const message = {
+        id: `${Date.now()}-${userId}`,
+        content,
+        user,
+        createdAt: new Date().toISOString(),
+      };
+      io.to(roomId).emit('chat:message', message);
+    }
   });
 
   socket.on('chat:typing', (data: { roomId: string; isTyping: boolean }) => {
@@ -255,6 +283,15 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${username} (${userId})`);
+
+    // Clean up typing indicators in all rooms this socket was in
+    Array.from(socket.rooms).forEach((roomId) => {
+      socket.to(roomId).emit('chat:typing', {
+        userId,
+        username,
+        isTyping: false,
+      });
+    });
 
     // Clean up voice rooms
     voiceRooms.forEach((users, roomId) => {

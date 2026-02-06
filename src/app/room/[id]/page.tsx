@@ -94,10 +94,14 @@ export default function RoomPage() {
     }
   }, [status, router, roomId, fetchRoom, joinRoom]);
 
-  useEffect(() => {
-    if (!session?.user?.id || !room) return;
+  const userId = session?.user?.id;
+  const userName = session?.user?.username || session?.user?.name || '';
+  const roomReady = !!room;
 
-    const sock = connectSocket(session.user.id, session.user.username || session.user.name || '');
+  useEffect(() => {
+    if (!userId || !roomReady) return;
+
+    const sock = connectSocket(userId, userName);
     setSocket(sock);
 
     sock.on('connect', () => {
@@ -128,7 +132,6 @@ export default function RoomPage() {
 
     sock.on('room:user-joined', (data: { userId: string; username: string }) => {
       console.log(`${data.username} joined the room`);
-      // Add user to members list if not already present
       setRoom((prev) => {
         if (!prev) return prev;
         const exists = prev.members.some((m) => m.user.id === data.userId);
@@ -145,7 +148,6 @@ export default function RoomPage() {
 
     sock.on('room:user-left', (data: { userId: string; username: string }) => {
       console.log(`${data.username} left the room`);
-      // Remove user from members list
       setRoom((prev) => {
         if (!prev) return prev;
         return {
@@ -165,7 +167,7 @@ export default function RoomPage() {
       sock.emit('room:leave', roomId);
       disconnectSocket();
     };
-  }, [session, room, roomId]);
+  }, [userId, userName, roomReady, roomId]);
 
   const handleVideoChange = (url: string) => {
     setVideoUrl(url);
