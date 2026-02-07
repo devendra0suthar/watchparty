@@ -27,6 +27,7 @@ interface VoiceUser {
 const roomStates = new Map<string, RoomState>();
 const voiceRooms = new Map<string, Map<string, VoiceUser>>();
 const activeScreenShares = new Map<string, string>(); // roomId -> sharerId
+const onlineMembers = new Map<string, Map<string, string>>(); // roomId -> Map<userId, username>
 
 io.on('connection', (socket) => {
   const userId = socket.handshake.auth.userId;
@@ -42,6 +43,18 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     console.log(`${username} joined room ${roomId}`);
 
+    // Track online members
+    if (!onlineMembers.has(roomId)) {
+      onlineMembers.set(roomId, new Map());
+    }
+    onlineMembers.get(roomId)!.set(userId, username);
+
+    // Send current online members list to the joining user
+    const members = Array.from(onlineMembers.get(roomId)!.entries()).map(
+      ([id, name]) => ({ userId: id, username: name })
+    );
+    socket.emit('room:members', members);
+
     const state = roomStates.get(roomId);
     if (state) {
       socket.emit('video:state', state);
@@ -56,6 +69,15 @@ io.on('connection', (socket) => {
   socket.on('room:leave', (roomId: string) => {
     socket.leave(roomId);
     console.log(`${username} left room ${roomId}`);
+
+    // Remove from online tracking
+    const roomOnline = onlineMembers.get(roomId);
+    if (roomOnline) {
+      roomOnline.delete(userId);
+      if (roomOnline.size === 0) {
+        onlineMembers.delete(roomId);
+      }
+    }
 
     socket.to(roomId).emit('room:user-left', {
       userId,
@@ -285,6 +307,20 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${username} (${userId})`);
+
+    // Clean up online members and notify rooms
+    onlineMembers.forEach((members, roomId) => {
+      if (members.has(userId)) {
+        members.delete(userId);
+        if (members.size === 0) {
+          onlineMembers.delete(roomId);
+        }
+        io.to(roomId).emit('room:user-left', {
+          userId,
+          username,
+        });
+      }
+    });
 
     // Clean up typing indicators in all rooms this socket was in
     Array.from(socket.rooms).forEach((roomId) => {

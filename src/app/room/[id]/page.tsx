@@ -52,6 +52,7 @@ export default function RoomPage() {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [watchMode, setWatchMode] = useState<'youtube' | 'screen'>('youtube');
+  const [onlineMembers, setOnlineMembers] = useState<Array<{ userId: string; username: string }>>([]);
 
   const fetchRoom = useCallback(async () => {
     try {
@@ -130,31 +131,22 @@ export default function RoomPage() {
       setVideoUrl(data.videoUrl);
     });
 
+    sock.on('room:members', (members: Array<{ userId: string; username: string }>) => {
+      setOnlineMembers(members);
+    });
+
     sock.on('room:user-joined', (data: { userId: string; username: string }) => {
       console.log(`${data.username} joined the room`);
-      setRoom((prev) => {
-        if (!prev) return prev;
-        const exists = prev.members.some((m) => m.user.id === data.userId);
+      setOnlineMembers((prev) => {
+        const exists = prev.some((m) => m.userId === data.userId);
         if (exists) return prev;
-        return {
-          ...prev,
-          members: [
-            ...prev.members,
-            { user: { id: data.userId, username: data.username } },
-          ],
-        };
+        return [...prev, { userId: data.userId, username: data.username }];
       });
     });
 
     sock.on('room:user-left', (data: { userId: string; username: string }) => {
       console.log(`${data.username} left the room`);
-      setRoom((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          members: prev.members.filter((m) => m.user.id !== data.userId),
-        };
-      });
+      setOnlineMembers((prev) => prev.filter((m) => m.userId !== data.userId));
     });
 
     return () => {
@@ -162,6 +154,7 @@ export default function RoomPage() {
       sock.off('disconnect');
       sock.off('connect_error');
       sock.off('video:change');
+      sock.off('room:members');
       sock.off('room:user-joined');
       sock.off('room:user-left');
       sock.emit('room:leave', roomId);
@@ -318,27 +311,27 @@ export default function RoomPage() {
             {/* Members */}
             <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-white">Members</h3>
+                <h3 className="text-sm font-semibold text-white">Online</h3>
                 <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">
-                  {room.members.length}
+                  {onlineMembers.length}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {room.members.map((member) => (
+                {onlineMembers.map((member) => (
                   <div
-                    key={member.user.id}
+                    key={member.userId}
                     className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-1.5 border border-gray-700/50"
                   >
                     <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-                      {member.user.username[0].toUpperCase()}
+                      {member.username[0].toUpperCase()}
                     </div>
                     <span className="text-white text-sm">
-                      {member.user.username}
+                      {member.username}
                     </span>
-                    {member.user.id === room.hostId && (
+                    {member.userId === room.hostId && (
                       <span className="text-purple-400 text-[10px] font-medium bg-purple-500/10 px-1.5 py-0.5 rounded">Host</span>
                     )}
-                    {member.user.id === currentUser.id && (
+                    {member.userId === currentUser.id && (
                       <span className="text-gray-500 text-[10px]">(You)</span>
                     )}
                   </div>
