@@ -208,33 +208,68 @@ export default function RoomPage() {
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Navbar */}
-      <nav className="bg-gray-900 border-b border-gray-800">
-        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+      <nav className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-800/60 sticky top-0 z-50">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/5 via-transparent to-pink-600/5 pointer-events-none"></div>
+        <div className="container mx-auto px-4 py-3 flex justify-between items-center relative">
+          {/* Left section */}
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-gray-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            <Link
+              href="/dashboard"
+              className="w-8 h-8 rounded-lg bg-gray-800/80 border border-gray-700/50 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/80 hover:border-gray-600 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </Link>
-            <div className="w-px h-6 bg-gray-800"></div>
-            <h1 className="text-lg font-semibold text-white">{room.name}</h1>
-            {isHost && (
-              <span className="bg-purple-500/20 text-purple-400 text-xs font-medium px-2.5 py-0.5 rounded-full border border-purple-500/30">
-                Host
-              </span>
-            )}
-            <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full ${
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-sm font-semibold text-white leading-tight">{room.name}</h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  {isHost && (
+                    <span className="text-[10px] font-medium text-purple-400">Host</span>
+                  )}
+                  {isHost && <span className="text-gray-700 text-[10px]">&bull;</span>}
+                  <span className="flex items-center gap-1 text-[10px] text-gray-500">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {onlineMembers.length} online
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Center - Connection status */}
+          <div className="hidden sm:flex absolute left-1/2 -translate-x-1/2">
+            <span className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all ${
               isConnected
                 ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                : 'bg-red-500/10 text-red-400 border border-red-500/20 animate-pulse'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${
-                isConnected ? 'bg-green-400' : 'bg-red-400'
+                isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
               }`}></span>
-              {isConnected ? 'Live' : 'Connecting...'}
+              {isConnected ? 'Live' : 'Reconnecting...'}
             </span>
           </div>
-          <QRShare roomId={roomId} />
+
+          {/* Right section */}
+          <div className="flex items-center gap-2">
+            <QRShare roomId={roomId} />
+            <div className="hidden sm:flex w-px h-6 bg-gray-800 mx-1"></div>
+            <div className="hidden sm:flex items-center gap-2 bg-gray-800/60 rounded-lg px-2.5 py-1.5 border border-gray-700/40">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-[10px] font-bold">
+                {currentUser.username[0].toUpperCase()}
+              </div>
+              <span className="text-xs text-gray-300 font-medium">{currentUser.username}</span>
+            </div>
+          </div>
         </div>
       </nav>
 
