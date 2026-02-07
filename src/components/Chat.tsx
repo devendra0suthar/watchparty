@@ -17,6 +17,7 @@ interface ChatMessage {
 interface ChatProps {
   roomId: string;
   socket: Socket | null;
+  isConnected: boolean;
   currentUser: {
     id: string;
     username: string;
@@ -28,6 +29,7 @@ interface ChatProps {
 export default function Chat({
   roomId,
   socket,
+  isConnected,
   currentUser,
   initialMessages = [],
 }: ChatProps) {
@@ -87,7 +89,7 @@ export default function Chat({
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !socket) return;
+    if (!newMessage.trim() || !socket || !isConnected) return;
 
     const content = newMessage.trim();
 
@@ -133,6 +135,12 @@ export default function Chat({
       <div className="p-4 border-b border-gray-700">
         <h3 className="text-lg font-semibold text-white">Chat</h3>
       </div>
+
+      {!isConnected && (
+        <div className="px-4 py-2 bg-red-900/50 text-red-300 text-sm text-center">
+          Disconnected — messages won&apos;t be delivered
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
@@ -185,7 +193,7 @@ export default function Chat({
           />
           <button
             type="submit"
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || !isConnected}
             className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Send

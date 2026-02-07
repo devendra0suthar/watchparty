@@ -345,6 +345,7 @@ export default function RoomPage() {
             <Chat
               roomId={roomId}
               socket={socket}
+              isConnected={isConnected}
               currentUser={currentUser}
               initialMessages={room.messages}
             />
