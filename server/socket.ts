@@ -119,47 +119,34 @@ io.on('connection', (socket) => {
     console.log(`Video changed in room ${roomId} to ${videoUrl}`);
   });
 
-  socket.on('chat:message', async (data: {
+  socket.on('chat:message', (data: {
     roomId: string;
     content: string;
     user: { id: string; username: string; avatar?: string };
   }) => {
     const { roomId, content, user } = data;
 
-    try {
-      const saved = await prisma.message.create({
-        data: {
-          content,
-          userId: user.id,
-          roomId,
-        },
-        include: {
-          user: {
-            select: { id: true, username: true, avatar: true },
-          },
-        },
-      });
+    const message = {
+      id: `${Date.now()}-${userId}`,
+      content,
+      user,
+      createdAt: new Date().toISOString(),
+    };
 
-      const message = {
-        id: saved.id,
-        content: saved.content,
-        user: saved.user,
-        createdAt: saved.createdAt.toISOString(),
-      };
+    // Broadcast immediately so all users see the message without delay
+    io.to(roomId).emit('chat:message', message);
+    console.log(`Chat message in room ${roomId} from ${user.username}: ${content}`);
 
-      io.to(roomId).emit('chat:message', message);
-      console.log(`Chat message in room ${roomId} from ${user.username}: ${content}`);
-    } catch (err) {
-      console.error('Error saving chat message:', err);
-      // Still broadcast even if DB save fails
-      const message = {
-        id: `${Date.now()}-${userId}`,
+    // Persist to database in the background
+    prisma.message.create({
+      data: {
         content,
-        user,
-        createdAt: new Date().toISOString(),
-      };
-      io.to(roomId).emit('chat:message', message);
-    }
+        userId: user.id,
+        roomId,
+      },
+    }).catch((err) => {
+      console.error('Error saving chat message:', err);
+    });
   });
 
   socket.on('chat:typing', (data: { roomId: string; isTyping: boolean }) => {
