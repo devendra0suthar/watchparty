@@ -276,43 +276,55 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
   }, []);
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-white">Voice Chat</h3>
+    <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+          Voice Chat
+          {isMicOn && (
+            <span className="text-xs text-gray-500 font-normal">
+              {peers.size + 1} {peers.size === 0 ? 'person' : 'people'}
+            </span>
+          )}
+        </h3>
         <div className="flex gap-2">
           {isMicOn ? (
             <>
               <button
                 onClick={toggleMute}
-                className={`p-2 rounded-lg transition-colors ${
-                  isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'
+                className={`p-2 rounded-lg transition-all text-sm ${
+                  isMuted
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                    : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-600 hover:text-white'
                 }`}
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted ? (
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   </svg>
                 )}
               </button>
               <button
                 onClick={stopMicrophone}
-                className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+                className="bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg hover:bg-red-500/30 transition-all text-xs font-medium"
               >
-                Leave Voice
+                Leave
               </button>
             </>
           ) : (
             <button
               onClick={startMicrophone}
-              className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
+              className="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-2 rounded-lg hover:bg-green-500/30 transition-all text-xs font-medium flex items-center gap-1.5"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
               Join Voice
@@ -322,36 +334,30 @@ export default function VoiceChat({ roomId, socket, currentUser }: VoiceChatProp
       </div>
 
       {isMicOn && (
-        <div className="space-y-2">
-          <p className="text-sm text-gray-400">
-            In voice: {peers.size + 1} {peers.size === 0 ? 'person' : 'people'}
-          </p>
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+              speakingUsers.has(currentUser.id)
+                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                : 'bg-gray-800 text-gray-400 border border-gray-700'
+            }`}
+          >
+            <div className={`w-1.5 h-1.5 rounded-full ${speakingUsers.has(currentUser.id) ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+            You{isMuted && <span className="text-red-400">(muted)</span>}
+          </div>
+          {Array.from(peers.values()).map((peer) => (
             <div
-              className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                speakingUsers.has(currentUser.id)
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-700 text-gray-300'
+              key={peer.peerId}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                speakingUsers.has(peer.peerId)
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-gray-800 text-gray-400 border border-gray-700'
               }`}
             >
-              <div className={`w-2 h-2 rounded-full ${speakingUsers.has(currentUser.id) ? 'bg-white animate-pulse' : 'bg-gray-500'}`} />
-              {currentUser.username} (You)
-              {isMuted && <span className="text-red-400 text-xs">(muted)</span>}
+              <div className={`w-1.5 h-1.5 rounded-full ${speakingUsers.has(peer.peerId) ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+              {peer.username}
             </div>
-            {Array.from(peers.values()).map((peer) => (
-              <div
-                key={peer.peerId}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                  speakingUsers.has(peer.peerId)
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                <div className={`w-2 h-2 rounded-full ${speakingUsers.has(peer.peerId) ? 'bg-white animate-pulse' : 'bg-gray-500'}`} />
-                {peer.username}
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       )}
     </div>

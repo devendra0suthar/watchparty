@@ -26,7 +26,6 @@ export default function VideoPlayer({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isSeeking, setIsSeeking] = useState(false);
   const syncingRef = useRef(false);
 
   const getPlayer = (): PlayerRef | null => {
@@ -106,30 +105,29 @@ export default function VideoPlayer({
 
   const handleSeek = useCallback(
     (seconds: number) => {
-      if (!isHost || syncingRef.current || !isSeeking) return;
+      if (!isHost || syncingRef.current) return;
       socket?.emit('video:seek', { roomId, currentTime: seconds });
     },
-    [isHost, roomId, socket, isSeeking]
+    [isHost, roomId, socket]
   );
-
-  const handleSeekStart = () => {
-    setIsSeeking(true);
-  };
-
-  const handleSeekEnd = () => {
-    setIsSeeking(false);
-  };
 
   if (!videoUrl) {
     return (
-      <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">No video selected</p>
+      <div className="aspect-video bg-gray-900 rounded-xl border border-gray-800 flex flex-col items-center justify-center">
+        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-3">
+          <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-gray-500 text-sm">No video selected</p>
+        {isHost && <p className="text-gray-600 text-xs mt-1">Paste a YouTube URL below to start watching</p>}
       </div>
     );
   }
 
   return (
-    <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+    <div className="aspect-video bg-black rounded-xl overflow-hidden relative border border-gray-800">
       <ReactPlayer
         ref={playerRef}
         url={videoUrl}
@@ -140,11 +138,10 @@ export default function VideoPlayer({
         onPlay={handlePlay}
         onPause={handlePause}
         onSeek={handleSeek}
-        onStart={handleSeekStart}
-        onBuffer={handleSeekEnd}
       />
       {!isHost && (
-        <div className="absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-sm text-white">
+        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white/80 flex items-center gap-1.5 border border-white/10">
+          <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
           Synced with host
         </div>
       )}
