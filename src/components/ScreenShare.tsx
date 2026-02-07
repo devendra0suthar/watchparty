@@ -219,6 +219,11 @@ export default function ScreenShare({
     socket.on('screen:started', handleScreenStart);
     socket.on('screen:stopped', handleScreenStop);
 
+    // Ask server if screen sharing is already active (handles late joiners / tab switches)
+    if (!isHost) {
+      socket.emit('screen:check', { roomId });
+    }
+
     return () => {
       socket.off('screen:viewer-join', handleViewerJoin);
       socket.off('screen:offer', handleOffer);

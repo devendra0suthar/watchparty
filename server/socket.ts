@@ -26,6 +26,7 @@ interface VoiceUser {
 
 const roomStates = new Map<string, RoomState>();
 const voiceRooms = new Map<string, Map<string, VoiceUser>>();
+const activeScreenShares = new Map<string, string>(); // roomId -> sharerId
 
 io.on('connection', (socket) => {
   const userId = socket.handshake.auth.userId;
@@ -233,14 +234,24 @@ io.on('connection', (socket) => {
   // Screen sharing events
   socket.on('screen:start', (data: { roomId: string; oderId: string }) => {
     const { roomId, oderId } = data;
+    activeScreenShares.set(roomId, userId);
     socket.to(roomId).emit('screen:started', { oderId });
     console.log(`${username} started screen sharing in room ${roomId}`);
   });
 
   socket.on('screen:stop', (data: { roomId: string }) => {
     const { roomId } = data;
+    activeScreenShares.delete(roomId);
     socket.to(roomId).emit('screen:stopped', {});
     console.log(`${username} stopped screen sharing in room ${roomId}`);
+  });
+
+  socket.on('screen:check', (data: { roomId: string }) => {
+    const { roomId } = data;
+    const sharerId = activeScreenShares.get(roomId);
+    if (sharerId) {
+      socket.emit('screen:started', { oderId: sharerId });
+    }
   });
 
   socket.on('screen:request', (data: { roomId: string; oderId: string }) => {
@@ -289,6 +300,14 @@ io.on('connection', (socket) => {
       if (users.has(userId)) {
         users.delete(userId);
         io.to(roomId).emit('voice:user-left', { userId });
+      }
+    });
+
+    // Clean up screen shares
+    activeScreenShares.forEach((sharerId, roomId) => {
+      if (sharerId === userId) {
+        activeScreenShares.delete(roomId);
+        io.to(roomId).emit('screen:stopped', {});
       }
     });
   });
