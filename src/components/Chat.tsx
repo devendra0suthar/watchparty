@@ -41,6 +41,8 @@ export default function Chat({
     if (!socket) return;
 
     const handleMessage = (message: ChatMessage) => {
+      // Skip own messages (already shown via optimistic update)
+      if (message.user.id === currentUser.id) return;
       setMessages((prev) => [...prev, message]);
     };
 
@@ -78,9 +80,22 @@ export default function Chat({
     e.preventDefault();
     if (!newMessage.trim() || !socket) return;
 
+    const content = newMessage.trim();
+
+    // Optimistic update — show message immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}`,
+        content,
+        user: currentUser,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
     socket.emit('chat:message', {
       roomId,
-      content: newMessage.trim(),
+      content,
       user: currentUser,
     });
 
