@@ -31,6 +31,10 @@ io.on('connection', (socket) => {
   const userId = socket.handshake.auth.userId;
   const username = socket.handshake.auth.username;
 
+  if (userId) {
+    socket.join(userId);
+  }
+
   console.log(`User connected: ${username} (${userId})`);
 
   socket.on('room:join', (roomId: string) => {
